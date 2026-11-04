@@ -1,0 +1,23 @@
+{
+  "name": "Shallow Well Survey App",
+  "short_name": "Well Survey",
+  "description": "Shallow well survey app with offline GPS, a built-in offline Iloilo City map, camera, dashboard, and Google Sheets sync. Internet is only needed to upload records.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#dffaf0",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='38' fill='%2310b981'/%3E%3Cpath fill='white' d='M96 24c-28.7 0-52 23.3-52 52 0 38.5 52 92 52 92s52-53.5 52-92c0-28.7-23.3-52-52-52Zm0 72a20 20 0 1 1 0-40 20 20 0 0 1 0 40Z'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%2310b981'/%3E%3Cpath fill='white' d='M256 64c-76.2 0-138 61.8-138 138 0 102.2 138 246 138 246s138-143.8 138-246c0-76.2-61.8-138-138-138Zm0 190a54 54 0 1 1 0-108 54 54 0 0 1 0 108Z'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

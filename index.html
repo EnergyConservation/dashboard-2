@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shallow Well Survey — PC Dashboard (Iloilo City)</title>
+<meta name="theme-color" content="#0f766e">
+<style>
+  :root{
+    --bg:#f1f5f9; --panel:#ffffff; --line:#e2e8f0; --ink:#0f172a; --muted:#64748b; --brand:#0f766e; --brand2:#10b981;
+    --good:#16a34a; --bad:#dc2626; --warn:#d97706; --blue:#2563eb; --violet:#7c3aed; --gray:#94a3b8;
+    --r:14px; --shadow:0 1px 2px rgba(15,23,42,.06),0 6px 20px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  button,input,select,textarea{font:inherit}
+  button{cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:8px 12px;font-weight:650}
+  button:hover{border-color:#94a3b8}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  button.primary:hover{background:#115e59}
+  button.ghost{background:transparent}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  input,select,textarea{border:1px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#fff;color:var(--ink);width:100%}
+  label{font-size:12px;font-weight:700;color:var(--muted);display:block;margin:0 0 4px}
+  .small{font-size:12px;color:var(--muted)}
+
+  /* ---------- top bar ---------- */
+  header{display:flex;align-items:center;gap:14px;padding:10px 18px;background:linear-gradient(90deg,#0f766e,#0e7490);color:#fff;position:sticky;top:0;z-index:50;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+  header .logo{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:20px}
+  header h1{font-size:17px;margin:0;line-height:1.2}
+  header .sub{font-size:12px;opacity:.85}
+  header .spacer{flex:1}
+  header button{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28);color:#fff}
+  header button:hover{background:rgba(255,255,255,.22);border-color:#fff}
+  .source-pill{display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;background:rgba(255,255,255,.14);font-size:12.5px;font-weight:700;white-space:nowrap}
+  .source-pill i{width:9px;height:9px;border-radius:50%;background:#fbbf24;display:inline-block}
+  .source-pill.ok i{background:#4ade80}.source-pill.err i{background:#f87171}
+
+  /* ---------- layout ---------- */
+  .layout{display:grid;grid-template-columns:270px minmax(0,1fr) 370px;gap:14px;padding:14px;align-items:start}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+  .side{position:sticky;top:70px;max-height:calc(100vh - 84px);overflow:auto;padding:14px}
+  .side h3{margin:4px 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .side .group{padding:12px 0;border-top:1px solid var(--line)}
+  .side .group:first-child{border-top:0;padding-top:0}
+  .field{margin-bottom:10px}
+  .seg{display:grid;grid-template-columns:1fr 1fr;background:#f1f5f9;border-radius:12px;padding:4px;gap:4px}
+  .seg button{border:0;background:transparent;padding:9px 6px;border-radius:9px;font-size:13px;color:#334155}
+  .seg button.active{background:#fff;color:var(--brand);box-shadow:0 1px 4px rgba(15,23,42,.12)}
+  .legend{display:grid;gap:6px;font-size:12.5px}
+  .legend span{display:flex;align-items:center;gap:8px}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1px rgba(15,23,42,.25);flex:none}
+  .range-row{display:flex;align-items:center;gap:8px}.range-row input{flex:1;padding:0}.range-row b{min-width:44px;text-align:right}
+
+  .center{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0}
+  .center>*{min-width:0}
+  html,body{overflow-x:hidden}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+  .kpi{padding:12px 14px}
+  .kpi .n{font-size:24px;font-weight:850;letter-spacing:-.02em}
+  .kpi .t{font-size:11.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .kpi .d{font-size:12px;font-weight:700;margin-top:2px}
+  .kpi.good .n{color:var(--good)}.kpi.bad .n{color:var(--bad)}.kpi.warn .n{color:var(--warn)}.kpi.blue .n{color:var(--blue)}.kpi.violet .n{color:var(--violet)}
+
+  .map-card{position:relative;overflow:hidden;height:min(62vh,640px);min-height:420px}
+  #mapCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
+  #mapCanvas.dragging{cursor:grabbing}
+  .map-tools{position:absolute;top:12px;right:12px;display:grid;gap:7px;z-index:5}
+  .map-tools button{width:40px;height:40px;padding:0;font-size:18px;border-radius:11px;box-shadow:0 4px 12px rgba(15,23,42,.14)}
+  .map-tools button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .map-top{position:absolute;left:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;z-index:5;right:64px}
+  .map-top .chip{background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:12.5px;font-weight:700;box-shadow:0 3px 10px rgba(15,23,42,.1)}
+  .map-status{position:absolute;left:12px;bottom:12px;right:150px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:650;color:#334155;z-index:5}
+  .map-credit{position:absolute;right:8px;bottom:8px;font-size:10.5px;background:rgba(255,255,255,.9);padding:3px 7px;border-radius:7px;z-index:5}
+  .map-credit a{color:#1d4ed8;text-decoration:none}
+  .tooltip{position:absolute;pointer-events:none;z-index:8;background:#0f172a;color:#fff;padding:7px 9px;border-radius:9px;font-size:12px;line-height:1.35;max-width:260px;box-shadow:0 8px 20px rgba(0,0,0,.25);display:none}
+
+  .tabs{display:flex;gap:6px;padding:10px 12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;padding:9px 10px;color:var(--muted)}
+  .tabs button.active{color:var(--brand);border-bottom-color:var(--brand)}
+  .tabs .grow{flex:1}
+  .tabs .tools{display:flex;gap:6px;align-items:center;padding-bottom:6px}
+  .table-wrap{overflow:auto;max-height:520px}
+  table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+  th{position:sticky;top:0;background:#f8fafc;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);cursor:pointer;user-select:none;z-index:1}
+  th.sorted::after{content:" ▾"}th.sorted.asc::after{content:" ▴"}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:#f0fdfa}
+  tbody tr.sel{background:#ccfbf1}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:800}
+  .b-good{background:#dcfce7;color:#166534}.b-bad{background:#fee2e2;color:#991b1b}.b-same{background:#f1f5f9;color:#475569}
+  .b-pend{background:#dbeafe;color:#1e40af}.b-new{background:#ede9fe;color:#5b21b6}.b-warn{background:#fef3c7;color:#92400e}
+  .delta-up{color:var(--good);font-weight:800}.delta-down{color:var(--bad);font-weight:800}
+  .bars{display:flex;flex-direction:column;gap:2px;min-width:120px}
+  .bars div{height:7px;border-radius:4px}
+  .empty{padding:28px;text-align:center;color:var(--muted)}
+
+  .details{padding:0}
+  .details .head{padding:14px 16px;border-bottom:1px solid var(--line)}
+  .details .head h2{font-size:16px;margin:0 0 2px}
+  .details .body{padding:14px 16px;display:grid;gap:12px}
+  .kv{display:grid;grid-template-columns:130px 1fr;gap:5px 10px;font-size:13px}
+  .kv div:nth-child(odd){color:var(--muted);font-weight:650}
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .compare .col{border:1px solid var(--line);border-radius:12px;padding:10px}
+  .compare .col h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  .compare .before h4{color:var(--blue)}.compare .after h4{color:var(--violet)}
+  .metric-row{display:flex;justify-content:space-between;gap:6px;font-size:12.5px;padding:3px 0;border-bottom:1px dashed #eef2f7}
+  .metric-row:last-child{border-bottom:0}
+  .delta-table td{padding:6px 8px}
+  .review{border:1px solid #bfdbfe;background:#eff6ff;border-radius:12px;padding:12px;display:grid;gap:8px}
+  .stars{display:flex;gap:4px}
+  .stars button{border:0;background:none;font-size:24px;padding:0 2px;color:#cbd5e1;line-height:1}
+  .stars button.on{color:#f59e0b}
+  .visit{display:flex;gap:8px;align-items:center;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+  .visit:hover{border-color:var(--brand)}
+  .placeholder{padding:30px 18px;text-align:center;color:var(--muted)}
+  .placeholder .big{font-size:40px}
+
+  /* ---------- modal ---------- */
+  .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+  .modal-bg.open{display:flex}
+  .modal{background:#fff;border-radius:18px;max-width:620px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 30px 60px rgba(0,0,0,.3)}
+  .modal .mh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .modal .mh h2{margin:0;font-size:17px}
+  .modal .mb{padding:18px 20px;display:grid;gap:12px}
+  .modal .mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+  .steps{margin:0;padding-left:20px;display:grid;gap:4px;font-size:13px;color:#334155}
+  .note{padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid var(--line);font-size:13px}
+  .note.ok{background:#f0fdf4;border-color:#86efac;color:#14532d}.note.err{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+  .welcome{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .welcome button{display:grid;gap:4px;text-align:left;padding:14px;border-radius:14px;font-weight:600}
+  .welcome button b{font-size:14px}
+  .welcome button span{font-size:12px;color:var(--muted);font-weight:500}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 16px;border-radius:12px;font-weight:650;z-index:200;display:none;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+
+  @media (max-width:1280px){ .layout{grid-template-columns:250px minmax(0,1fr)} .details-col{grid-column:1 / -1} .side{position:static;max-height:none} }
+  @media (max-width:800px){ .layout{grid-template-columns:1fr} header .sub{display:none} .welcome{grid-template-columns:1fr} }
+  @media print{ header,.side,.map-tools,.tabs .tools{display:none!important} .layout{grid-template-columns:1fr} .table-wrap{max-height:none} }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">💧</div>
+  <div>
+    <h1>Shallow Well Survey — Supervisor Dashboard</h1>
+    <div class="sub">Iloilo City · map of surveyed wells · baseline vs after comparison · check &amp; rate</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="source-pill" id="sourcePill"><i></i><span>No data yet</span></div>
+  <label style="display:flex;align-items:center;gap:6px;color:#fff;margin:0;font-size:12.5px;font-weight:700" title="Reload from the Google Sheet every minute">
+    <input type="checkbox" id="autoRefresh" style="width:auto"> Auto-refresh</label>
+  <button id="refreshBtn" title="Load the newest data from the Google Sheet">⟳ Refresh</button>
+  <button id="connectBtn">⚙ Connect Sheet</button>
+  <button id="importBtn" title="Open a CSV downloaded from the Google Sheet">⬆ Import CSV</button>
+  <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+</header>
+
+<div class="layout">
+  <!-- ================= LEFT: filters ================= -->
+  <aside class="panel side" id="filters">
+    <div class="group">
+      <h3>View</h3>
+      <div class="seg" id="viewSeg">
+        <button data-view="all" class="active">📍 All Surveys</button>
+        <button data-view="compare">⇄ Before vs After</button>
+      </div>
+    </div>
+    <div class="group">
+      <h3>Filter</h3>
+      <div class="field"><label>Search (name, zone, ID, remarks)</label><input id="fSearch" type="search" placeholder="Type to search…"></div>
+      <div class="field"><label>District</label><select id="fDistrict"><option value="">All districts</option></select></div>
+      <div class="field"><label>Barangay</label><select id="fBarangay"><option value="">All barangays</option></select></div>
+      <div class="field"><label>Surveyor</label><select id="fSurveyor"><option value="">All surveyors</option></select></div>
+      <div class="field"><label>Water status</label><select id="fStatus"><option value="">Any</option><option>Sufficient</option><option>Insufficient</option></select></div>
+      <div class="field"><label>Review</label><select id="fReview"><option value="">Any</option><option value="unchecked">Not yet checked</option><option value="checked">Checked</option><option value="dup">Possible duplicate</option><option value="low">Rated 1–2</option></select></div>
+      <div class="field" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label>From</label><input id="fFrom" type="date"></div>
+        <div><label>To</label><input id="fTo" type="date"></div>
+      </div>
+      <button id="clearFilters" class="ghost" style="width:100%">Clear filters</button>
+    </div>
+    <div class="group" id="baselineGroup">
+      <h3>Baseline settings</h3>
+      <div class="field">
+        <label>Match radius — after-visits within this distance of the baseline coordinate are the same well</label>
+        <div class="range-row"><input type="range" id="radius" min="5" max="60" step="1" value="15"><b id="radiusVal">15 m</b></div>
+      </div>
+      <div class="field">
+        <label>What counts as Before / After</label>
+        <select id="phaseRule">
+          <option value="round">Survey Round field (Baseline / After)</option>
+          <option value="first">First visit = before, latest visit = after</option>
+          <option value="date">Date cutoff</option>
+        </select>
+      </div>
+      <div class="field" id="cutoffField" style="display:none"><label>Surveys before this date are baseline</label><input id="cutoff" type="date"></div>
+    </div>
+    <div class="group">
+      <h3>Legend</h3>
+      <div class="legend" id="legend"></div>
+    </div>
+  </aside>
+
+  <!-- ================= CENTER: KPIs, map, tables ================= -->
+  <section class="center">
+    <div class="kpis" id="kpis"></div>
+
+    <div class="panel map-card" id="mapCard">
+      <canvas id="mapCanvas"></canvas>
+      <div class="map-top" id="mapTop"></div>
+      <div class="map-tools">
+        <button id="zIn" title="Zoom in">+</button>
+        <button id="zOut" title="Zoom out">−</button>
+        <button id="fitBtn" title="Fit map to the wells shown">⤢</button>
+        <button id="baseBtn" title="Switch base map: offline Iloilo map / online OSM tiles">🗺</button>
+        <button id="brgyBtn" class="on" title="Show barangay boundaries">▦</button>
+        <button id="heatBtn" title="Shade barangays by result">◐</button>
+      </div>
+      <div class="tooltip" id="tooltip"></div>
+      <div class="map-status" id="mapStatus">Loading offline Iloilo City map…</div>
+      <div class="map-credit"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a> · PSGC</div>
+    </div>
+
+    <div class="panel">
+      <div class="tabs" id="tabs">
+        <button data-tab="records" class="active">Survey records</button>
+        <button data-tab="compare">Before vs After by well</button>
+        <button data-tab="area">By barangay (area baseline)</button>
+        <span class="grow"></span>
+        <span class="tools"><span class="small" id="rowCount"></span><button id="exportBtn">⬇ Export CSV</button><button id="printBtn">🖨 Print</button></span>
+      </div>
+      <div class="table-wrap" id="tableWrap"></div>
+    </div>
+  </section>
+
+  <!-- ================= RIGHT: details ================= -->
+  <aside class="panel details details-col" id="details">
+    <div class="placeholder"><div class="big">🗺️</div><b>Click a well on the map or a row in the table</b><div class="small" style="margin-top:6px">You will see its full survey, the baseline vs after comparison for that coordinate, photos, and where to check &amp; rate it.</div></div>
+  </aside>
+</div>
+
+<!-- ================= Connect modal ================= -->
+<div class="modal-bg" id="connectModal">
+  <div class="modal">
+    <div class="mh"><h2>Connect to the Google Sheet</h2><button class="ghost" data-close>✕</button></div>
+    <div class="mb">
+      <ol class="steps">
+        <li>In the Google Sheet: <b>Extensions → Apps Script</b>, paste <b>google-apps-script.gs</b>, and set your own <b>DASHBOARD_KEY</b>.</li>
+        <li><b>Deploy → New deployment → Web app</b> (Execute as: Me · Who has access: Anyone).</li>
+        <li>Paste the Web App URL (ends in <code>/exec</code>) and the key below.</li>
+      </ol>
+      <div class="field"><label>Google Apps Script Web App URL</label><input id="cUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec"></div>
+      <div class="field"><label>Dashboard key (the DASHBOARD_KEY in the script)</label><input id="cKey" type="password" placeholder="Your secret key"></div>
+      <div class="field"><label>Your name (saved as "Checked By" when you rate records)</label><input id="cChecker" type="text" placeholder="e.g. Engr. Reyes"></div>
+      <div id="cNote" class="note">The key keeps interviewee names private: phones can only send records, only this dashboard can read them.</div>
+    </div>
+    <div class="mf"><button data-close>Cancel</button><button id="cTest">Test connection</button><button class="primary" id="cSave">Save &amp; load data</button></div>
+  </div>
+</div>
+
+<!-- ================= Welcome modal ================= -->
+<div class="modal-bg" id="welcomeModal">
+  <div class="modal" style="max-width:720px">
+    <div class="mh"><h2>Welcome 👋 — where should the dashboard get its data?</h2><button class="ghost" data-close>✕</button></div>
+    <div class="mb">
+      <div class="welcome">
+        <button id="wConnect"><b>🔗 Connect Google Sheet</b><span>Live data from all surveyors' phones. Best for daily checking.</span></button>
+        <button id="wImport"><b>⬆ Import a CSV</b><span>Google Sheet → File → Download → CSV. Works with no internet.</span></button>
+        <button id="wSample"><b>🧪 Try sample data</b><span>See how the map and before/after comparison work. Not real data.</span></button>
+      </div>
+      <div class="note">Tip: open this page on GitHub Pages next to the phone app (same folder), e.g. <code>…/dashboard.html</code>. The Iloilo map works even offline.</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   SMALL HELPERS
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>{ const n=parseFloat(String(v??'').replace(/,/g,'')); return Number.isFinite(n)?n:null; };
+const fmt=(v,d=0)=>v===null||v===undefined||!Number.isFinite(v)?'—':v.toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:0});
+const fmtDate=d=>d?d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'—';
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+function toast(msg,ms=2600){ const t=$('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>t.style.display='none',ms); }
+const SETTINGS_KEY='well_dashboard_settings';
+const settings=Object.assign({url:'',key:'',checker:'',base:'offline',radius:15,rule:'round',cutoff:'',auto:false,brgy:true,heat:false},JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}'));
+const saveSettingsLocal=()=>localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
+function metersBetween(a,b){ const R=6371000,r=x=>x*Math.PI/180; const dLat=r(b.lat-a.lat),dLon=r(b.lon-a.lon); const h=Math.sin(dLat/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+
+/* =====================================================================
+   OFFLINE ILOILO MAP CORE (same data file as the phone app: iloilo-map.js)
+   ===================================================================== */
+const OM={status:'idle',layers:null,barangays:[],districts:[],grids:{},bbox:null,stamp:0};
+function proj(lat,lon){ const s=Math.sin(clamp(lat,-85,85)*Math.PI/180); return {x:(lon+180)/360*256, y:(0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*256}; }
+function unproj(x,y){ const lon=x/256*360-180; const n=Math.PI-2*Math.PI*y/256; return {lat:180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))), lon}; }
+function omDecode(str){
+  const out=[]; let i=0,lat=0,lon=0;
+  while(i<str.length){
+    let b,shift=0,res=0; do{b=str.charCodeAt(i++)-63;res|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20); lat+=(res&1)?~(res>>1):(res>>1);
+    shift=0;res=0; do{b=str.charCodeAt(i++)-63;res|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20); lon+=(res&1)?~(res>>1):(res>>1);
+    const p=proj(lat/1e5,lon/1e5); out.push(p.x,p.y);
+  }
+  return out;
+}
+function omFeature(src,extra){
+  const parts=(Array.isArray(src)?src:[src]).map(omDecode);
+  let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity;
+  parts.forEach(p=>{ for(let i=0;i<p.length;i+=2){ if(p[i]<a)a=p[i]; if(p[i]>c)c=p[i]; if(p[i+1]<b)b=p[i+1]; if(p[i+1]>d)d=p[i+1]; } });
+  return Object.assign({parts,minx:a,miny:b,maxx:c,maxy:d,stamp:0},extra||{});
+}
+function loadMapData(){
+  if(OM.status!=='idle') return;
+  OM.status='loading';
+  const s=document.createElement('script'); s.src='./iloilo-map.js'; s.async=true;
+  s.onload=()=>{ try{ prepareMap(window.ILOILO_OFFLINE_MAP); }catch(e){ OM.status='error'; console.error(e); } afterMapLoad(); };
+  s.onerror=()=>{ OM.status='error'; afterMapLoad(); };
+  document.head.appendChild(s);
+}
+function prepareMap(d){
+  const L={};
+  L.land=d.land.map(r=>omFeature(r)); L.water=d.water.map(r=>omFeature(r));
+  L.green=d.green.map(g=>omFeature(g[1],{kind:g[0]}));
+  L.waterways=d.waterways.map(w=>omFeature(w[2],{major:w[0]===1}));
+  L.roads=d.roads.map(r=>omFeature(r[3],{cls:r[0],name:d.names[r[1]]||''}));
+  L.buildings=d.buildings.map(b=>omFeature([b]));
+  L.pois=d.pois.map(p=>{ const w=proj(p[3],p[2]); return {kind:p[0],name:d.names[p[1]]||'',x:w.x,y:w.y,minx:w.x,maxx:w.x,miny:w.y,maxy:w.y,stamp:0}; });
+  OM.districts=d.districts.map(x=>{ const f=omFeature(x.rings.flat()); f.name=x.name; const l=proj(x.label[1],x.label[0]); f.lx=l.x; f.ly=l.y; return f; });
+  OM.barangays=d.barangays.map(x=>{ const f=omFeature(x.rings.flat()); Object.assign(f,{name:x.app||x.name, district:x.district}); const l=proj(x.label[1],x.label[0]); f.lx=l.x; f.ly=l.y; return f; });
+  const tl=proj(d.bbox[3],d.bbox[0]), br=proj(d.bbox[1],d.bbox[2]);
+  OM.bbox={minx:tl.x,miny:tl.y,maxx:br.x,maxy:br.y}; OM.layers=L;
+  ['green','water','waterways','roads','buildings','pois'].forEach(k=>OM.grids[k]=buildGrid(L[k]));
+  OM.status='ready';
+}
+const GN=48;
+function buildGrid(fs){
+  const b=OM.bbox,cw=(b.maxx-b.minx)/GN,ch=(b.maxy-b.miny)/GN,cells=new Array(GN*GN);
+  fs.forEach(f=>{ const x0=clamp(Math.floor((f.minx-b.minx)/cw),0,GN-1),x1=clamp(Math.floor((f.maxx-b.minx)/cw),0,GN-1),y0=clamp(Math.floor((f.miny-b.miny)/ch),0,GN-1),y1=clamp(Math.floor((f.maxy-b.miny)/ch),0,GN-1);
+    for(let gx=x0;gx<=x1;gx++)for(let gy=y0;gy<=y1;gy++){const k=gy*GN+gx;(cells[k]||(cells[k]=[])).push(f);} });
+  return {cells,cw,ch};
+}
+function query(layer,v){
+  const g=OM.grids[layer],b=OM.bbox,out=[],st=++OM.stamp; if(!g) return out;
+  const x0=clamp(Math.floor((v.minx-b.minx)/g.cw),0,GN-1),x1=clamp(Math.floor((v.maxx-b.minx)/g.cw),0,GN-1),y0=clamp(Math.floor((v.miny-b.miny)/g.ch),0,GN-1),y1=clamp(Math.floor((v.maxy-b.miny)/g.ch),0,GN-1);
+  for(let gx=x0;gx<=x1;gx++)for(let gy=y0;gy<=y1;gy++){ const c=g.cells[gy*GN+gx]; if(!c) continue; for(const f of c){ if(f.stamp===st) continue; f.stamp=st; if(f.maxx<v.minx||f.minx>v.maxx||f.maxy<v.miny||f.miny>v.maxy) continue; out.push(f); } }
+  return out;
+}
+function pointInParts(x,y,parts){ let inside=false; for(const p of parts){ for(let i=0,j=p.length-2;i<p.length;j=i,i+=2){ const xi=p[i],yi=p[i+1],xj=p[j],yj=p[j+1]; if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside; } } return inside; }
+function barangayAt(lat,lon){ if(OM.status!=='ready') return null; const p=proj(lat,lon); for(const b of OM.barangays){ if(p.x<b.minx||p.x>b.maxx||p.y<b.miny||p.y>b.maxy) continue; if(pointInParts(p.x,p.y,b.parts)) return b; } return null; }
+
+const ROAD={1:[11,13,'#f8b195','#c0583a'],2:[11,12,'#fcd6a4','#b07c1e'],3:[12,11,'#f7fabf','#8a9324'],4:[13,10,'#ffffff','#9a9a9a'],5:[14,7.5,'#ffffff','#bdbdbd'],6:[15,4.5,'#ffffff','#c8c8c8'],7:[16,1.6,'#e9806e',null]};
+const GREEN={park:'#c8facc',grass:'#cdebb0',cemetery:'#aacbaf',wood:'#add19e',wetland:'#b5d6c4',farm:'#eef0d5',industrial:'#ebdbe8',commercial:'#f2dad9',school:'#fff1ba',hospital:'#ffe2e2'};
+const POI={school:['#b45309','S'],hospital:['#dc2626','H'],health:['#e11d48','+'],church:['#4b5563','✝'],hall:['#7c3aed','B'],police:['#1d4ed8','P'],fire:['#ea580c','F'],market:['#ca8a04','M'],mall:['#9333ea','$'],fuel:['#0f766e','G'],bank:['#15803d','₱'],park:['#16a34a','♣'],landmark:['#0e7490','★'],transport:['#0369a1','T'],water:['#0284c7','W']};
+const POI_RANK={hospital:0,hall:1,school:1,police:2,fire:2,market:2,church:3,mall:3,health:4,water:4,landmark:4,transport:5,park:5,bank:6,fuel:6};
+function trace(ctx,pts,S,ox,oy,closed){ let lx=NaN,ly=NaN; for(let i=0;i<pts.length;i+=2){ const x=pts[i]*S-ox,y=pts[i+1]*S-oy; if(i===0){ctx.moveTo(x,y);lx=x;ly=y;continue;} if(Math.abs(x-lx)<0.6&&Math.abs(y-ly)<0.6&&i<pts.length-2) continue; ctx.lineTo(x,y);lx=x;ly=y; } if(closed) ctx.closePath(); }
+function fillFeats(ctx,fs,S,ox,oy){ ctx.beginPath(); fs.forEach(f=>f.parts.forEach(p=>trace(ctx,p,S,ox,oy,true))); ctx.fill('evenodd'); }
+
+function drawBase(ctx,w,h,V,opt){
+  const {S,ox,oy,z}=V, L=OM.layers, b=OM.bbox, view=V.view;
+  ctx.fillStyle='#e5e7eb'; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#aad3df'; ctx.fillRect(b.minx*S-ox,b.miny*S-oy,(b.maxx-b.minx)*S,(b.maxy-b.miny)*S);
+  ctx.fillStyle='#f2efe9'; fillFeats(ctx,L.land,S,ox,oy);
+  const byK={}; query('green',view).forEach(f=>(byK[f.kind]||(byK[f.kind]=[])).push(f));
+  ['farm','industrial','commercial','school','hospital','grass','wood','wetland','cemetery','park'].forEach(k=>{ if(byK[k]){ ctx.fillStyle=GREEN[k]; fillFeats(ctx,byK[k],S,ox,oy);} });
+  if(opt.shade) opt.shade(ctx,S,ox,oy);
+  ctx.fillStyle='#aad3df'; fillFeats(ctx,query('water',view),S,ox,oy);
+  ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#aad3df';
+  query('waterways',view).forEach(f=>{ if(!f.major&&z<14) return; ctx.lineWidth=Math.min(f.major?Math.max(2,9*2**(z-16)):Math.max(1,2.5*2**(z-16)),f.major?40:8); ctx.beginPath(); f.parts.forEach(p=>trace(ctx,p,S,ox,oy,false)); ctx.stroke(); });
+  if(z>=15){ const bl=query('buildings',view); ctx.fillStyle=z>=16?'#d9d0c9':'#e3dcd5'; fillFeats(ctx,bl,S,ox,oy);
+    if(z>=17){ ctx.strokeStyle='#c4b6ab'; ctx.lineWidth=.8; ctx.beginPath(); bl.forEach(f=>f.parts.forEach(p=>trace(ctx,p,S,ox,oy,true))); ctx.stroke(); } }
+  const roads=query('roads',view).filter(r=>z>=ROAD[r.cls][0]);
+  const rw=c=>clamp(ROAD[c][1]*2**(z-16),c<=2?2.2:c<=4?1.6:1,c===7?3:90), low=z<14;
+  const byC={}; roads.forEach(r=>(byC[r.cls]||(byC[r.cls]=[])).push(r)); const cls=Object.keys(byC).map(Number).sort((a,b)=>b-a);
+  cls.forEach(c=>{ const s=ROAD[c]; if(!s[3]||c===7||(low&&c>=4)) return; ctx.strokeStyle=s[3]; ctx.lineWidth=rw(c)+(z>=16?2:1.4); ctx.beginPath(); byC[c].forEach(r=>r.parts.forEach(p=>trace(ctx,p,S,ox,oy,false))); ctx.stroke(); });
+  cls.forEach(c=>{ const s=ROAD[c]; ctx.strokeStyle=(low&&c>=4)?'#c9c3bb':s[2]; ctx.lineWidth=(low&&c>=4)?1:rw(c); ctx.setLineDash(c===7?[3,3]:[]); ctx.beginPath(); byC[c].forEach(r=>r.parts.forEach(p=>trace(ctx,p,S,ox,oy,false))); ctx.stroke(); });
+  ctx.setLineDash([]);
+  V.roads=roads;
+}
+function drawBoundaries(ctx,V,opt){
+  const {S,ox,oy,z,view}=V;
+  if(opt.brgy && z>=13){ ctx.strokeStyle='rgba(124,58,237,.55)'; ctx.lineWidth=z>=16?1.6:1; ctx.setLineDash([5,4]); ctx.beginPath();
+    OM.barangays.forEach(f=>{ if(f.maxx<view.minx||f.minx>view.maxx||f.maxy<view.miny||f.miny>view.maxy) return; f.parts.forEach(p=>trace(ctx,p,S,ox,oy,true)); }); ctx.stroke(); }
+  if(opt.highlight){ ctx.setLineDash([]); ctx.strokeStyle='#7c3aed'; ctx.lineWidth=3; ctx.beginPath(); opt.highlight.forEach(f=>f.parts.forEach(p=>trace(ctx,p,S,ox,oy,true))); ctx.stroke(); }
+  ctx.strokeStyle='rgba(91,33,182,.75)'; ctx.lineWidth=z>=15?3:2.2; ctx.setLineDash([10,6]); ctx.beginPath(); OM.districts.forEach(f=>f.parts.forEach(p=>trace(ctx,p,S,ox,oy,true))); ctx.stroke(); ctx.setLineDash([]);
+}
+function drawLabels(ctx,w,h,V,opt){
+  const {S,ox,oy,z,view}=V, placed=opt.placed;
+  const fits=(a,b,c,d)=>{ if(c<0||d<0||a>w||b>h) return false; for(const r of placed){ if(a<r[2]&&c>r[0]&&b<r[3]&&d>r[1]) return false; } placed.push([a,b,c,d]); return true; };
+  const halo=(t,x,y,font,fill)=>{ ctx.font=font; ctx.lineWidth=3.2; ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.strokeText(t,x,y); ctx.fillStyle=fill; ctx.fillText(t,x,y); };
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  if(z<=14) OM.districts.forEach(f=>{ const x=f.lx*S-ox,y=f.ly*S-oy,t=f.name.toUpperCase(); ctx.font='900 '+(z<=12?12:14)+'px system-ui,sans-serif'; const tw=ctx.measureText(t).width; if(fits(x-tw/2-4,y-10,x+tw/2+4,y+10)) halo(t,x,y,ctx.font,'#5b21b6'); });
+  if(z>=14) OM.barangays.forEach(f=>{ const x=f.lx*S-ox,y=f.ly*S-oy; if(x<-80||y<-20||x>w+80||y>h+20) return; const font=(z>=16?'800 12.5px':'800 11px')+' system-ui,sans-serif'; ctx.font=font; const tw=ctx.measureText(f.name).width; if(fits(x-tw/2-3,y-8,x+tw/2+3,y+8)) halo(f.name,x,y,font,'#6d28d9'); });
+  if(z>=15 && V.roads){ const seen=new Set();
+    V.roads.slice().sort((a,b)=>a.cls-b.cls).forEach(r=>{ if(!r.name||r.cls===7||(z<16&&r.cls>3)||seen.has(r.name)) return; let best=null,bl=0;
+      r.parts.forEach(p=>{ for(let i=0;i+3<p.length;i+=2){ const x0=p[i]*S-ox,y0=p[i+1]*S-oy,x1=p[i+2]*S-ox,y1=p[i+3]*S-oy,mx=(x0+x1)/2,my=(y0+y1)/2; if(mx<20||my<20||mx>w-20||my>h-20) continue; const l=Math.hypot(x1-x0,y1-y0); if(l>bl){bl=l;best=[x0,y0,x1,y1];} } });
+      if(!best) return; const font='700 '+(z>=17?12:11)+'px system-ui,sans-serif'; ctx.font=font; const tw=ctx.measureText(r.name).width; if(bl<tw+16) return;
+      let a=Math.atan2(best[3]-best[1],best[2]-best[0]); if(a>Math.PI/2)a-=Math.PI; if(a<-Math.PI/2)a+=Math.PI;
+      const mx=(best[0]+best[2])/2,my=(best[1]+best[3])/2,ex=Math.abs(Math.cos(a))*tw/2+Math.abs(Math.sin(a))*7,ey=Math.abs(Math.sin(a))*tw/2+Math.abs(Math.cos(a))*7;
+      if(!fits(mx-ex,my-ey,mx+ex,my+ey)) return; seen.add(r.name); ctx.save(); ctx.translate(mx,my); ctx.rotate(a); halo(r.name,0,0,font,'#374151'); ctx.restore(); }); }
+  if(z>=16){ const ps=query('pois',view).filter(p=>z>=17||(POI_RANK[p.kind]??9)<=3); ps.sort((a,b)=>(POI_RANK[a.kind]??9)-(POI_RANK[b.kind]??9));
+    ps.forEach(p=>{ const x=p.x*S-ox,y=p.y*S-oy,st=POI[p.kind]||['#475569','•']; ctx.font='700 10.5px system-ui,sans-serif'; const tw=ctx.measureText(p.name).width; if(!fits(x-7,y-7,x+10+tw,y+7)) return;
+      ctx.globalAlpha=.75; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fillStyle=st[0]; ctx.fill(); ctx.globalAlpha=1; ctx.textAlign='left'; halo(p.name,x+9,y,'600 10.5px system-ui,sans-serif','#475569'); ctx.textAlign='center'; }); }
+}
+
+/* =====================================================================
+   DATA: load, normalise, baseline/after matching
+   ===================================================================== */
+let ALL=[];        // normalised records
+let DATA_SOURCE='none';
+let CLUSTERS=[];   // baseline/after groups
+const state={view:'all', tab:'records', selected:null, sort:{records:['date',-1],compare:['result',1],area:['district',1]}};
+
+function pick(o,...keys){ for(const k of keys){ if(o[k]!==undefined && o[k]!=='') return o[k]; } return ''; }
+function parseDate(v){ if(!v) return null; if(v instanceof Date) return v; const s=String(v).trim(); const d=new Date(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)?s+':00':s); return isNaN(d)?null:d; }
+function normRound(v){ const s=String(v||'').toLowerCase(); if(/after|follow|post|endline/.test(s)) return 'After'; if(/base|before|pre|first/.test(s)) return 'Baseline'; return ''; }
+function normalise(o,i){
+  const lat=num(pick(o,'Latitude X','latX','lat')), lon=num(pick(o,'Latitude Y','latY','lon'));
+  const date=parseDate(pick(o,'Interview Date/Time','interviewDateTime'))||parseDate(pick(o,'Saved On Phone','savedAt'))||parseDate(pick(o,'Last Uploaded'));
+  const r={
+    id:String(pick(o,'Record ID','id')||('row-'+(i+2))), surveyor:String(pick(o,'Surveyor','surveyor')), deviceId:String(pick(o,'Device ID','deviceId')),
+    district:String(pick(o,'District','district')), barangay:String(pick(o,'Barangay','barangay')), zone:String(pick(o,'Zone','zone')),
+    lat, lon, hasCoord:Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)>1&&Math.abs(lon)>1,
+    interviewee:String(pick(o,'Interviewee','interviewee')), date, round:normRound(pick(o,'Survey Round','surveyRound')),
+    usedByFamily:String(pick(o,'Used by Family (Owned)','usedByFamily')), usedByResidents:String(pick(o,'Used by Family & Residents','usedByFamilyResidents')),
+    population:num(pick(o,'Population','population')), wellDepth:num(pick(o,'Well Depth (Tabay)','wellDepth')),
+    normalLevel:num(pick(o,'Normal Level','normalLevel')), currentLevel:num(pick(o,'Current Level','currentLevel')),
+    otherSources:String(pick(o,'Other Water Sources','otherWaterSource')), waterUse:String(pick(o,'Water Use','waterUse')),
+    dailyNeed:num(pick(o,'Daily Need (L)','dailyNeed')), currentSupply:num(pick(o,'Current Supply (L)','currentSupply')), availableSupply:num(pick(o,'Available Supply (L)','availableSupply')),
+    rechargeTabay:num(pick(o,'Recharge (Tabay)','wellRechargeTabay')), rechargeL:num(pick(o,'Recharge (L)','wellRechargeLiters')),
+    status:String(pick(o,'Status','status')), affected:num(pick(o,'Affected','affected')), remarks:String(pick(o,'Remarks','remarks')),
+    photo:String(pick(o,'Photo','photoName')), dupOf:String(pick(o,'Possible Duplicate Of')),
+    checkedBy:String(pick(o,'Checked By')), rating:num(pick(o,'Rating (1-5)')), checkerRemarks:String(pick(o,'Checker Remarks')), checkedOn:parseDate(pick(o,'Checked On')),
+  };
+  if(r.hasCoord){ const w=proj(r.lat,r.lon); r.wx=w.x; r.wy=w.y; }
+  if(!/^(Sufficient|Insufficient)$/.test(r.status) && r.availableSupply!==null) r.status=r.availableSupply>=0?'Sufficient':'Insufficient';
+  return r;
+}
+function setData(rows,source){
+  ALL=rows.map(normalise); DATA_SOURCE=source;
+  buildFilterOptions(); rebuild(); fitToData(); setSourcePill();
+}
+function setSourcePill(msg,cls){
+  const p=$('sourcePill');
+  p.className='source-pill '+(cls||(ALL.length?'ok':''));
+  const label={sheet:'Google Sheet',csv:'CSV file',sample:'Sample data'}[DATA_SOURCE]||'No data';
+  p.querySelector('span').textContent=msg || (label+' · '+ALL.length+' record'+(ALL.length===1?'':'s')+(DATA_SOURCE==='sheet'&&state.loadedAt?' · '+state.loadedAt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):''));
+}
+
+async function loadFromSheet(quiet){
+  if(!settings.url || !settings.key){ if(!quiet) openConnect(); return false; }
+  if(!quiet) setSourcePill('Loading from Google Sheet…','');
+  try{
+    const u=settings.url+(settings.url.includes('?')?'&':'?')+'action=records&key='+encodeURIComponent(settings.key)+'&t='+Date.now();
+    const res=await fetch(u,{redirect:'follow'}); const data=await res.json();
+    if(!data.ok) throw new Error(data.error||'Sheet refused the request');
+    state.loadedAt=new Date();
+    const prevSel=state.selected;
+    ALL=data.records.map(normalise); DATA_SOURCE='sheet';
+    buildFilterOptions(); rebuild(); setSourcePill();
+    if(!quiet || !state.fitted){ fitToData(); state.fitted=true; }
+    if(prevSel) reselect(prevSel);
+    if(!quiet) toast('Loaded '+ALL.length+' records from the Google Sheet');
+    return true;
+  }catch(e){
+    setSourcePill('Sheet not reachable — '+(navigator.onLine?'check URL / key':'offline'),'err');
+    if(!quiet) toast('Could not load the sheet: '+e.message,4500);
+    return false;
+  }
+}
+function reselect(sel){
+  if(sel.type==='record'){ const r=ALL.find(x=>x.id===sel.id); if(r) select({type:'record',id:r.id},false); }
+  else if(sel.type==='cluster'){ const c=CLUSTERS.find(x=>x.key===sel.key); if(c) select({type:'cluster',key:c.key},false); }
+}
+
+/* ---- CSV import (Google Sheet → File → Download → CSV, or the phone app's CSV) ---- */
+function parseCSV(text){
+  const rows=[]; let row=[],f='',q=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true; else if(c===','){row.push(f);f='';} else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(f); rows.push(row); row=[]; f=''; } else f+=c; }
+  if(f||row.length){row.push(f);rows.push(row);}
+  const head=rows.shift()||[]; return rows.filter(r=>r.some(x=>x.trim())).map(r=>Object.fromEntries(head.map((h,i)=>[h.trim(),r[i]??''])));
+}
+
+/* ---- Baseline / After matching by coordinate ----
+   The BASELINE coordinate of each well is the base. Any later/after survey within the
+   match radius of that base point is treated as the same well. */
+function phaseOf(r){
+  if(settings.rule==='date' && settings.cutoff){ const c=new Date(settings.cutoff+'T00:00:00'); return r.date && r.date<c ? 'before':'after'; }
+  if(settings.rule==='round') return r.round==='After'?'after':(r.round==='Baseline'?'before':null);
+  return null; // 'first': decided by order
+}
+function buildClusters(){
+  const R=settings.radius, cell=R;
+  const pts=ALL.filter(r=>r.hasCoord).slice().sort((a,b)=>(a.date||0)-(b.date||0));
+  const grid=new Map(), clusters=[];
+  const mx=lon=>lon*111320*Math.cos(10.72*Math.PI/180), my=lat=>lat*110540;
+  const keyOf=(x,y)=>Math.floor(x/cell)+','+Math.floor(y/cell);
+  const nearest=(r)=>{ const x=mx(r.lon),y=my(r.lat),gx=Math.floor(x/cell),gy=Math.floor(y/cell); let best=null,bd=Infinity;
+    for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){ const arr=grid.get((gx+i)+','+(gy+j)); if(!arr) continue; for(const c of arr){ const d=metersBetween(c.base,r); if(d<=R&&d<bd){bd=d;best=c;} } }
+    return best; };
+  const addCluster=(r,isBefore)=>{ const c={key:'C'+clusters.length,base:{lat:r.lat,lon:r.lon},before:isBefore?r:null,afters:isBefore?[]:[r],visits:[r],extraBaselines:[]}; clusters.push(c); const k=keyOf(mx(r.lon),my(r.lat)); (grid.get(k)||grid.set(k,[]).get(k)).push(c); return c; };
+  pts.forEach(r=>{
+    let ph=phaseOf(r); const c=nearest(r);
+    if(ph===null) ph = c ? 'after' : 'before';
+    if(ph==='before'){
+      if(c && !c.before){ c.before=r; c.visits.push(r); }
+      else if(c){ c.extraBaselines.push(r); c.visits.push(r); }
+      else addCluster(r,true);
+    }else{
+      if(c){ c.afters.push(r); c.visits.push(r); } else addCluster(r,false);
+    }
+  });
+  clusters.forEach(c=>{
+    c.after=c.afters.length ? c.afters.reduce((a,b)=>((b.date||0)>=(a.date||0)?b:a)) : null;
+    const b=c.before, a=c.after; c.main=b||a;
+    c.distM=b&&a?metersBetween(b,a):null;
+    c.dSupply=b&&a&&a.availableSupply!==null&&b.availableSupply!==null?a.availableSupply-b.availableSupply:null;
+    c.dLevel=b&&a&&a.currentLevel!==null&&b.currentLevel!==null?a.currentLevel-b.currentLevel:null;
+    c.dAffected=b&&a&&a.affected!==null&&b.affected!==null?a.affected-b.affected:null;
+    if(!b) c.result='new'; else if(!a) c.result='pending';
+    else if(b.status==='Insufficient'&&a.status==='Sufficient') c.result='improved';
+    else if(b.status==='Sufficient'&&a.status==='Insufficient') c.result='worsened';
+    else if(c.dSupply!==null&&c.dSupply>=100) c.result='improved';
+    else if(c.dSupply!==null&&c.dSupply<=-100) c.result='worsened';
+    else c.result='same';
+    c.district=c.main.district; c.barangay=c.main.barangay;
+  });
+  CLUSTERS=clusters;
+}
+const RESULT={improved:['Improved','b-good','#16a34a'],worsened:['Worsened','b-bad','#dc2626'],same:['No change','b-same','#64748b'],pending:['Baseline only — not yet re-surveyed','b-pend','#2563eb'],new:['After only — no baseline here','b-new','#7c3aed']};
+const RESULT_ORDER={worsened:0,improved:1,same:2,pending:3,new:4};
+
+/* ---- filters ---- */
+function buildFilterOptions(){
+  const keep=(id,vals,all)=>{ const s=$(id),cur=s.value; s.innerHTML='<option value="">'+all+'</option>'+[...vals].filter(Boolean).sort((a,b)=>a.localeCompare(b)).map(v=>'<option>'+esc(v)+'</option>').join(''); if([...s.options].some(o=>o.value===cur)) s.value=cur; };
+  keep('fDistrict',new Set(ALL.map(r=>r.district)),'All districts');
+  updateBarangayOptions();
+  keep('fSurveyor',new Set(ALL.map(r=>r.surveyor)),'All surveyors');
+}
+function updateBarangayOptions(){
+  const d=$('fDistrict').value, s=$('fBarangay'), cur=s.value;
+  const vals=new Set(ALL.filter(r=>!d||r.district===d).map(r=>r.barangay));
+  s.innerHTML='<option value="">All barangays</option>'+[...vals].filter(Boolean).sort((a,b)=>a.localeCompare(b)).map(v=>'<option>'+esc(v)+'</option>').join('');
+  if([...s.options].some(o=>o.value===cur)) s.value=cur;
+}
+function recordPasses(r){
+  const q=$('fSearch').value.trim().toLowerCase();
+  if(q && ![r.interviewee,r.zone,r.id,r.remarks,r.barangay,r.surveyor,r.checkerRemarks].join(' ').toLowerCase().includes(q)) return false;
+  if($('fDistrict').value && r.district!==$('fDistrict').value) return false;
+  if($('fBarangay').value && r.barangay!==$('fBarangay').value) return false;
+  if($('fSurveyor').value && r.surveyor!==$('fSurveyor').value) return false;
+  if($('fStatus').value && r.status!==$('fStatus').value) return false;
+  const rv=$('fReview').value;
+  if(rv==='unchecked' && (r.checkedBy||r.rating)) return false;
+  if(rv==='checked' && !(r.checkedBy||r.rating)) return false;
+  if(rv==='dup' && !r.dupOf) return false;
+  if(rv==='low' && !(r.rating && r.rating<=2)) return false;
+  if($('fFrom').value && (!r.date || r.date<new Date($('fFrom').value+'T00:00:00'))) return false;
+  if($('fTo').value && (!r.date || r.date>new Date($('fTo').value+'T23:59:59'))) return false;
+  return true;
+}
+let FILTERED=[], FCLUSTERS=[];
+function rebuild(){
+  buildClusters();
+  FILTERED=ALL.filter(recordPasses);
+  const ok=new Set(FILTERED);
+  FCLUSTERS=CLUSTERS.filter(c=>c.visits.some(v=>ok.has(v)));
+  renderKpis(); renderLegend(); renderTable(); renderMapTop(); requestRender();
+  if(state.selected) reselect(state.selected);
+}
+
+/* =====================================================================
+   KPIs, legend, tables
+   ===================================================================== */
+function kpi(n,t,cls='',d=''){ return '<div class="panel kpi '+cls+'"><div class="t">'+t+'</div><div class="n">'+n+'</div>'+(d?'<div class="d">'+d+'</div>':'')+'</div>'; }
+function renderKpis(){
+  const el=$('kpis');
+  if(!ALL.length){ el.innerHTML=kpi('0','Records')+kpi('—','Connect the sheet or import a CSV to begin'); return; }
+  if(state.view==='all'){
+    const R=FILTERED, suf=R.filter(r=>r.status==='Sufficient').length, ins=R.filter(r=>r.status==='Insufficient').length;
+    const pop=R.reduce((a,r)=>a+(r.population||0),0), aff=R.reduce((a,r)=>a+(r.affected||0),0);
+    const unchecked=R.filter(r=>!(r.checkedBy||r.rating)).length, rated=R.filter(r=>r.rating), avg=rated.length?rated.reduce((a,r)=>a+r.rating,0)/rated.length:null;
+    const dup=R.filter(r=>r.dupOf).length, noGps=R.filter(r=>!r.hasCoord).length;
+    el.innerHTML=kpi(fmt(R.length),'Surveys shown')+kpi(fmt(suf),'Sufficient','good')+kpi(fmt(ins),'Insufficient','bad')+kpi(fmt(pop),'Population served')+kpi(fmt(aff),'Individuals affected','bad')
+      +kpi(fmt(unchecked),'Not yet checked','warn')+kpi(avg?avg.toFixed(1)+' ★':'—','Average rating','',rated.length+' rated')+kpi(fmt(dup),'Possible duplicates','warn',noGps?noGps+' without GPS':'');
+  }else{
+    const C=FCLUSTERS, cnt=k=>C.filter(c=>c.result===k).length, paired=C.filter(c=>c.before&&c.after);
+    const affB=paired.reduce((a,c)=>a+(c.before.affected||0),0), affA=paired.reduce((a,c)=>a+(c.after.affected||0),0);
+    const sufB=paired.filter(c=>c.before.status==='Sufficient').length, sufA=paired.filter(c=>c.after.status==='Sufficient').length;
+    const withBase=C.filter(c=>c.before).length;
+    el.innerHTML=kpi(fmt(withBase),'Baseline wells','blue')+kpi(fmt(paired.length),'Re-surveyed (after)','violet',withBase?Math.round(paired.length/withBase*100)+'% of baseline':'')
+      +kpi(fmt(cnt('improved')),'Improved','good')+kpi(fmt(cnt('worsened')),'Worsened','bad')+kpi(fmt(cnt('same')),'No change')
+      +kpi(fmt(cnt('pending')),'Waiting for after-survey','blue')+kpi(fmt(sufB)+' → '+fmt(sufA),'Sufficient wells (pairs)','good')
+      +kpi(fmt(affB)+' → '+fmt(affA),'Affected people (pairs)',affA<=affB?'good':'bad',affA===affB?'':((affA<affB?'▼ ':'▲ ')+fmt(Math.abs(affA-affB))));
+  }
+}
+function renderLegend(){
+  $('baselineGroup').style.opacity=state.view==='compare'?1:.6;
+  $('legend').innerHTML = state.view==='all'
+    ? '<span><i class="dot" style="background:#16a34a"></i>Sufficient</span><span><i class="dot" style="background:#dc2626"></i>Insufficient</span><span><i class="dot" style="background:#fff;box-shadow:0 0 0 2px #f59e0b"></i>Orange ring = not yet checked</span><span><i class="dot" style="background:#94a3b8"></i>Shape: ● baseline · ◆ after</span>'
+    : Object.entries(RESULT).map(([k,v])=>'<span><i class="dot" style="background:'+v[2]+'"></i>'+v[0]+'</span>').join('')+'<span class="small">Dashed circle = match radius around the baseline coordinate (zoom in to see).</span>';
+}
+function renderMapTop(){
+  const sel=[$('fDistrict').value,$('fBarangay').value].filter(Boolean).join(' · ');
+  $('mapTop').innerHTML='<span class="chip">'+(state.view==='all'?'📍 '+fmt(FILTERED.filter(r=>r.hasCoord).length)+' surveys on map':'⇄ '+fmt(FCLUSTERS.length)+' well locations')+'</span>'+(sel?'<span class="chip">'+esc(sel)+'</span>':'')+'<span class="chip">'+(settings.base==='online'&&navigator.onLine?'🌐 Online tiles':'🗺 Offline Iloilo map')+'</span>';
+}
+const deltaHtml=(d,unit='',dec=1)=>d===null?'—':(d>0?'<span class="delta-up">▲ '+fmt(d,dec)+unit+'</span>':d<0?'<span class="delta-down">▼ '+fmt(-d,dec)+unit+'</span>':'<span>±0'+unit+'</span>');
+const fewerIsBetter=d=>d===null?'—':d<0?'<span class="delta-up">▼ '+fmt(-d)+'</span>':d>0?'<span class="delta-down">▲ '+fmt(d)+'</span>':'±0';
+const statusBadge=s=>s==='Sufficient'?'<span class="badge b-good">Sufficient</span>':s==='Insufficient'?'<span class="badge b-bad">Insufficient</span>':esc(s||'—');
+const roundBadge=r=>r==='After'?'<span class="badge b-new">After</span>':r==='Baseline'?'<span class="badge b-pend">Baseline</span>':'<span class="small">—</span>';
+const stars=n=>n?'<span style="color:#f59e0b">'+'★'.repeat(n)+'</span><span style="color:#cbd5e1">'+'★'.repeat(5-n)+'</span>':'<span class="small">—</span>';
+
+function areaRows(){
+  const by=new Map();
+  FCLUSTERS.forEach(c=>{ const k=(c.district||'—')+'|'+(c.barangay||'—'); if(!by.has(k)) by.set(k,{district:c.district||'—',barangay:c.barangay||'—',cl:[]}); by.get(k).cl.push(c); });
+  return [...by.values()].map(g=>{
+    const base=g.cl.filter(c=>c.before), pairs=g.cl.filter(c=>c.before&&c.after);
+    const avg=(arr,f)=>{ const v=arr.map(f).filter(x=>x!==null&&x!==undefined); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null; };
+    return {district:g.district, barangay:g.barangay, baseline:base.length, after:g.cl.filter(c=>c.after).length, pairs:pairs.length,
+      pct:base.length?pairs.length/base.length*100:null,
+      sufB:base.filter(c=>c.before.status==='Sufficient').length, sufA:g.cl.filter(c=>c.after&&c.after.status==='Sufficient').length,
+      affB:base.reduce((a,c)=>a+(c.before.affected||0),0), affA:g.cl.some(c=>c.after)?g.cl.filter(c=>c.after).reduce((a,c)=>a+(c.after.affected||0),0):null,
+      lvlB:avg(base,c=>c.before.currentLevel), lvlA:avg(g.cl.filter(c=>c.after),c=>c.after.currentLevel),
+      improved:g.cl.filter(c=>c.result==='improved').length, worsened:g.cl.filter(c=>c.result==='worsened').length};
+  });
+}
+const TABLES={
+  records:{
+    rows:()=>FILTERED,
+    cols:[
+      ['date','Date',r=>fmtDate(r.date),r=>r.date?r.date.getTime():0],
+      ['round','Round',r=>roundBadge(r.round),r=>r.round],
+      ['district','District',r=>esc(r.district)],['barangay','Barangay',r=>esc(r.barangay)],['zone','Zone',r=>esc(r.zone)],
+      ['interviewee','Interviewee',r=>esc(r.interviewee)],['surveyor','Surveyor',r=>esc(r.surveyor)],
+      ['population','Pop.',r=>fmt(r.population),r=>r.population,'num'],['currentLevel','Level (tabay)',r=>fmt(r.currentLevel,2),r=>r.currentLevel,'num'],
+      ['availableSupply','Avail. supply (L)',r=>fmt(r.availableSupply),r=>r.availableSupply,'num'],
+      ['status','Status',r=>statusBadge(r.status),r=>r.status],
+      ['gps','GPS',r=>r.hasCoord?'✓':'<span class="badge b-warn">none</span>',r=>r.hasCoord?1:0],
+      ['dup','Duplicate?',r=>r.dupOf?'<span class="badge b-warn">check</span>':'',r=>r.dupOf?1:0],
+      ['rating','Rating',r=>stars(r.rating),r=>r.rating||0],['checkedBy','Checked by',r=>esc(r.checkedBy)]
+    ],
+    sel:r=>({type:'record',id:r.id}), isSel:r=>state.selected&&state.selected.type==='record'&&state.selected.id===r.id
+  },
+  compare:{
+    rows:()=>FCLUSTERS,
+    cols:[
+      ['result','Result',c=>'<span class="badge '+RESULT[c.result][1]+'">'+RESULT[c.result][0].split(' —')[0]+'</span>',c=>RESULT_ORDER[c.result]],
+      ['district','District',c=>esc(c.district)],['barangay','Barangay',c=>esc(c.barangay)],['interviewee','Interviewee',c=>esc(c.main.interviewee)],
+      ['bDate','Baseline date',c=>fmtDate(c.before&&c.before.date),c=>c.before&&c.before.date?c.before.date.getTime():0],
+      ['aDate','After date',c=>fmtDate(c.after&&c.after.date),c=>c.after&&c.after.date?c.after.date.getTime():0],
+      ['status','Status before → after',c=>(c.before?statusBadge(c.before.status):'—')+' → '+(c.after?statusBadge(c.after.status):'—'),c=>RESULT_ORDER[c.result]],
+      ['dLevel','Level Δ (tabay)',c=>deltaHtml(c.dLevel,'',2),c=>c.dLevel??-1e9,'num'],
+      ['dSupply','Supply Δ (L)',c=>deltaHtml(c.dSupply,'',0),c=>c.dSupply??-1e9,'num'],
+      ['dAffected','Affected Δ',c=>fewerIsBetter(c.dAffected),c=>c.dAffected??-1e9,'num'],
+      ['distM','Distance from baseline',c=>c.distM===null?'—':fmt(c.distM,1)+' m',c=>c.distM??-1,'num'],
+      ['visits','Visits',c=>c.visits.length,c=>c.visits.length,'num']
+    ],
+    sel:c=>({type:'cluster',key:c.key}), isSel:c=>state.selected&&state.selected.type==='cluster'&&state.selected.key===c.key
+  },
+  area:{
+    rows:areaRows,
+    cols:[
+      ['district','District',a=>esc(a.district)],['barangay','Barangay',a=>esc(a.barangay)],
+      ['baseline','Baseline wells',a=>fmt(a.baseline),a=>a.baseline,'num'],['pairs','Re-surveyed',a=>fmt(a.pairs)+(a.pct!==null?' <span class="small">('+Math.round(a.pct)+'%)</span>':''),a=>a.pct??-1,'num'],
+      ['suf','Sufficient before → after',a=>fmt(a.sufB)+' → '+fmt(a.sufA),a=>a.sufA-a.sufB,'num'],
+      ['aff','Affected before → after',a=>fmt(a.affB)+' → '+fmt(a.affA)+(a.affA!==null?' '+fewerIsBetter(a.affA-a.affB):''),a=>a.affA===null?-1e9:a.affA-a.affB,'num'],
+      ['lvl','Avg level before → after (tabay)',a=>fmt(a.lvlB,2)+' → '+fmt(a.lvlA,2),a=>(a.lvlA??0)-(a.lvlB??0),'num'],
+      ['chart','Before vs after',a=>{ const mx=Math.max(a.baseline,a.after,1); return '<div class="bars" title="Blue = sufficient at baseline, violet = sufficient after"><div style="width:'+(a.sufB/mx*120)+'px;background:#2563eb"></div><div style="width:'+(a.sufA/mx*120)+'px;background:#7c3aed"></div></div>'; },a=>a.sufA],
+      ['iw','Improved / Worsened',a=>'<span class="delta-up">'+a.improved+'</span> / <span class="delta-down">'+a.worsened+'</span>',a=>a.improved-a.worsened,'num']
+    ],
+    sel:a=>({type:'area',district:a.district,barangay:a.barangay}), isSel:()=>false
+  }
+};
+function renderTable(){
+  const T=TABLES[state.tab], [sk,sd]=state.sort[state.tab];
+  let rows=T.rows().slice();
+  const col=T.cols.find(c=>c[0]===sk)||T.cols[0], keyf=col[3]||(r=>String(col[2](r)).replace(/<[^>]+>/g,''));
+  rows.sort((a,b)=>{ const x=keyf(a),y=keyf(b); return (x>y?1:x<y?-1:0)*sd; });
+  const shown=rows.slice(0,800);
+  $('rowCount').textContent=rows.length+' row'+(rows.length===1?'':'s')+(rows.length>shown.length?' (showing first 800 — use filters)':'');
+  if(!rows.length){ $('tableWrap').innerHTML='<div class="empty">'+(ALL.length?'No rows match the filters.':'No data yet. Connect the Google Sheet, import a CSV, or try the sample data.')+'</div>'; return; }
+  $('tableWrap').innerHTML='<table><thead><tr>'+T.cols.map(c=>'<th data-k="'+c[0]+'" class="'+(c[0]===sk?'sorted'+(sd>0?' asc':''):'')+'">'+c[1]+'</th>').join('')+'</tr></thead><tbody>'
+    +shown.map((r,i)=>'<tr data-i="'+i+'" class="'+(T.isSel(r)?'sel':'')+'">'+T.cols.map(c=>'<td class="'+(c[4]||'')+'">'+c[2](r)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+  $('tableWrap').querySelectorAll('th').forEach(th=>th.onclick=()=>{ const k=th.dataset.k; const cur=state.sort[state.tab]; state.sort[state.tab]=[k,cur[0]===k?-cur[1]:1]; renderTable(); });
+  $('tableWrap').querySelectorAll('tbody tr').forEach(tr=>tr.onclick=()=>{ const r=shown[+tr.dataset.i]; const s=T.sel(r);
+    if(s.type==='area'){ $('fDistrict').value=s.district==='—'?'':s.district; updateBarangayOptions(); $('fBarangay').value=s.barangay==='—'?'':s.barangay; rebuild(); fitToData(); return; }
+    select(s,true); });
+}
+
+/* =====================================================================
+   DETAILS PANEL + REVIEW
+   ===================================================================== */
+function select(sel,fly){
+  state.selected=sel;
+  if(sel.type==='record'){ const r=ALL.find(x=>x.id===sel.id); if(!r) return; renderRecordDetails(r); if(fly&&r.hasCoord) flyTo(r.lat,r.lon); }
+  else { const c=CLUSTERS.find(x=>x.key===sel.key); if(!c) return; renderClusterDetails(c); if(fly) flyTo(c.base.lat,c.base.lon); }
+  document.querySelectorAll('#tableWrap tbody tr').forEach(tr=>tr.classList.remove('sel'));
+  renderTable(); requestRender();
+}
+function photoHtml(p){ if(!p) return '<span class="small">No photo</span>'; if(/^https?:/.test(p)) return '<a href="'+esc(p)+'" target="_blank" rel="noopener">📷 Open photo</a>'; return '<span class="small">'+esc(p)+'</span>'; }
+function recordKv(r){
+  const rows=[['Record ID',esc(r.id)],['Survey round',roundBadge(r.round)],['Date',r.date?esc(r.date.toLocaleString()):'—'],['Surveyor',esc(r.surveyor||'—')],
+    ['District / Brgy',esc(r.district)+' / '+esc(r.barangay)],['Zone',esc(r.zone||'—')],['Interviewee',esc(r.interviewee||'—')],
+    ['GPS',r.hasCoord?r.lat.toFixed(6)+', '+r.lon.toFixed(6)+' <a href="https://www.google.com/maps?q='+r.lat+','+r.lon+'" target="_blank" rel="noopener">map ↗</a>':'<span class="badge b-warn">No GPS</span>'],
+    ['Used by family',esc(r.usedByFamily||'—')+' · residents: '+esc(r.usedByResidents||'—')],['Population',fmt(r.population)],['Well depth',fmt(r.wellDepth,2)+' tabay'],
+    ['Normal / current',fmt(r.normalLevel,2)+' / '+fmt(r.currentLevel,2)+' tabay'],['Daily need',fmt(r.dailyNeed)+' L'],['Current supply',fmt(r.currentSupply)+' L'],
+    ['Available supply',fmt(r.availableSupply)+' L'],['Recharge needed',fmt(r.rechargeTabay,2)+' tabay / '+fmt(r.rechargeL)+' L'],['Status',statusBadge(r.status)],['Affected',fmt(r.affected)],
+    ['Other sources',esc(r.otherSources||'—')],['Water use',esc(r.waterUse||'—')],['Remarks',esc(r.remarks||'—')],['Photo',photoHtml(r.photo)]];
+  if(r.hasCoord){ const b=barangayAt(r.lat,r.lon); if(b && b.name!==r.barangay) rows.push(['Map check','<span class="badge b-warn">GPS is inside '+esc(b.name)+', '+esc(b.district)+'</span>']); else if(b) rows.push(['Map check','<span class="badge b-good">GPS inside '+esc(b.name)+'</span>']); else rows.push(['Map check','<span class="badge b-warn">GPS outside Iloilo City barangays</span>']); }
+  if(r.dupOf) rows.push(['Possible duplicate','<span class="badge b-warn">'+esc(r.dupOf)+'</span>']);
+  return '<div class="kv">'+rows.map(x=>'<div>'+x[0]+'</div><div>'+x[1]+'</div>').join('')+'</div>';
+}
+function reviewHtml(r){
+  const canSave=DATA_SOURCE==='sheet';
+  return '<div class="review"><b>✔ Check &amp; rate this record</b>'
+    +'<div><label>Rating</label><div class="stars" id="rvStars">'+[1,2,3,4,5].map(n=>'<button type="button" data-n="'+n+'" class="'+((r.rating||0)>=n?'on':'')+'" title="'+['','Poor — redo survey','Needs correction','Acceptable','Good','Excellent'][n]+'">★</button>').join('')+'</div></div>'
+    +'<div><label>Checked by</label><input id="rvBy" value="'+esc(r.checkedBy||settings.checker||'')+'" placeholder="Your name"></div>'
+    +'<div><label>Checker remarks</label><textarea id="rvRemarks" rows="2" placeholder="e.g. GPS in wrong barangay, please re-check">'+esc(r.checkerRemarks||'')+'</textarea></div>'
+    +'<div style="display:flex;gap:8px;align-items:center"><button class="primary" id="rvSave" '+(canSave?'':'disabled')+'>Save to Google Sheet</button><span class="small" id="rvNote">'+(canSave?(r.checkedOn?'Last checked '+esc(r.checkedOn.toLocaleString()):'Not checked yet'):'Connect the Google Sheet to save reviews.')+'</span></div></div>';
+}
+function wireReview(r){
+  let rating=r.rating||0;
+  const st=$('rvStars'); if(!st) return;
+  st.querySelectorAll('button').forEach(b=>b.onclick=()=>{ rating=+b.dataset.n; st.querySelectorAll('button').forEach(x=>x.classList.toggle('on',+x.dataset.n<=rating)); });
+  $('rvSave').onclick=async()=>{
+    const by=$('rvBy').value.trim(), remarks=$('rvRemarks').value.trim();
+    if(!rating){ toast('Choose a rating (1–5 stars) first'); return; }
+    if(by && by!==settings.checker){ settings.checker=by; saveSettingsLocal(); }
+    $('rvSave').disabled=true; $('rvNote').textContent='Saving…';
+    try{
+      const res=await fetch(settings.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'review',key:settings.key,id:r.id,checkedBy:by,rating,remarks}),redirect:'follow'});
+      const d=await res.json(); if(!d.ok) throw new Error(d.error||'failed');
+      r.rating=rating; r.checkedBy=by; r.checkerRemarks=remarks; r.checkedOn=new Date(d.checkedOn||Date.now());
+      $('rvNote').textContent='Saved ✓'; toast('Review saved to the Google Sheet'); renderKpis(); renderTable(); requestRender();
+    }catch(e){ $('rvNote').textContent='Not saved: '+e.message; }
+    $('rvSave').disabled=false;
+  };
+}
+function renderRecordDetails(r){
+  const c=CLUSTERS.find(c=>c.visits.includes(r));
+  const pair=c&&c.visits.length>1?'<button id="openPair" style="width:100%">⇄ View baseline vs after for this well ('+c.visits.length+' visits)</button>':'';
+  $('details').innerHTML='<div class="head"><h2>'+esc(r.interviewee||'Survey record')+'</h2><div class="small">'+esc(r.barangay)+', '+esc(r.district)+' · '+statusBadge(r.status)+' '+roundBadge(r.round)+'</div></div>'
+    +'<div class="body">'+pair+recordKv(r)+reviewHtml(r)+'</div>';
+  if(pair) $('openPair').onclick=()=>{ setView('compare'); select({type:'cluster',key:c.key},true); };
+  wireReview(r);
+}
+function metricRows(r){ if(!r) return '<div class="small" style="padding:10px 0">No survey in this round yet.</div>';
+  return [['Date',fmtDate(r.date)],['Surveyor',esc(r.surveyor||'—')],['Status',statusBadge(r.status)],['Current level',fmt(r.currentLevel,2)+' tabay'],['Avail. supply',fmt(r.availableSupply)+' L'],['Population',fmt(r.population)],['Affected',fmt(r.affected)],['Recharge',fmt(r.rechargeTabay,2)+' tabay'],['Rating',stars(r.rating)]]
+    .map(x=>'<div class="metric-row"><span class="small">'+x[0]+'</span><span>'+x[1]+'</span></div>').join(''); }
+function renderClusterDetails(c){
+  const b=c.before,a=c.after,R=RESULT[c.result];
+  const deltas=b&&a?'<table class="delta-table"><tbody>'
+    +'<tr><td>Water level</td><td class="num">'+deltaHtml(c.dLevel,' tabay',2)+'</td></tr>'
+    +'<tr><td>Available supply</td><td class="num">'+deltaHtml(c.dSupply,' L',0)+'</td></tr>'
+    +'<tr><td>People affected</td><td class="num">'+fewerIsBetter(c.dAffected)+'</td></tr>'
+    +'<tr><td>After GPS vs baseline GPS</td><td class="num">'+fmt(c.distM,1)+' m</td></tr></tbody></table>':'';
+  const visits=c.visits.slice().sort((x,y)=>(x.date||0)-(y.date||0)).map(v=>'<div class="visit" data-id="'+esc(v.id)+'">'+roundBadge(v.round)+'<span>'+fmtDate(v.date)+'</span><span class="small">'+esc(v.surveyor||'')+'</span><span style="margin-left:auto">'+statusBadge(v.status)+'</span></div>').join('');
+  $('details').innerHTML='<div class="head"><h2>'+esc(c.main.interviewee||'Well location')+'</h2><div class="small">'+esc(c.barangay)+', '+esc(c.district)+' · <span class="badge '+R[1]+'">'+R[0]+'</span></div></div>'
+    +'<div class="body"><div class="note">Base coordinate (from the baseline survey): <b>'+c.base.lat.toFixed(6)+', '+c.base.lon.toFixed(6)+'</b>. After-surveys within <b>'+settings.radius+' m</b> are matched to this well.</div>'
+    +'<div class="compare"><div class="col before"><h4>● Baseline (before)</h4>'+metricRows(b)+'</div><div class="col after"><h4>◆ After</h4>'+metricRows(a)+'</div></div>'+deltas
+    +(c.extraBaselines.length?'<div class="note err">'+c.extraBaselines.length+' extra baseline survey(s) at this spot — possible duplicate. Rate the one to keep.</div>':'')
+    +'<div><label>All visits at this coordinate (click to check &amp; rate)</label><div style="display:grid;gap:6px">'+visits+'</div></div></div>';
+  $('details').querySelectorAll('.visit').forEach(el=>el.onclick=()=>select({type:'record',id:el.dataset.id},true));
+}
+
+/* =====================================================================
+   MAP VIEW (canvas): base map, tiles, wells
+   ===================================================================== */
+const canvas=$('mapCanvas'), ctx=canvas.getContext('2d');
+const mv={z:13,cx:proj(10.7202,122.5621).x,cy:proj(10.7202,122.5621).y,markers:[],drag:null,raf:0};
+const tileCache=new Map();
+function requestRender(){ if(mv.raf) return; mv.raf=requestAnimationFrame(()=>{ mv.raf=0; renderMap(); }); }
+function getView(w,h){ const sc=2**mv.z; const ox=mv.cx*sc-w/2, oy=mv.cy*sc-h/2; const pad=40/sc; return {S:sc,ox,oy,z:mv.z,view:{minx:ox/sc-pad,miny:oy/sc-pad,maxx:(ox+w)/sc+pad,maxy:(oy+h)/sc+pad}}; }
+function drawTiles(w,h,V){
+  const z=V.z, n=2**z, size=256; const x0=Math.floor(V.ox/size), x1=Math.floor((V.ox+w)/size), y0=Math.floor(V.oy/size), y1=Math.floor((V.oy+h)/size);
+  let missing=0;
+  for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++){ if(y<0||y>=n) continue; const wx=((x%n)+n)%n, key=z+'/'+wx+'/'+y;
+    let t=tileCache.get(key);
+    if(!t){ t=new Image(); t.crossOrigin='anonymous'; t.onload=requestRender; t.onerror=()=>{t.failed=true;}; t.src='https://tile.openstreetmap.org/'+key+'.png'; tileCache.set(key,t); if(tileCache.size>600){ tileCache.delete(tileCache.keys().next().value); } }
+    if(t.complete && t.naturalWidth) ctx.drawImage(t,x*size-V.ox,y*size-V.oy,size,size); else missing++; }
+  return missing;
+}
+function wellColor(r){ return r.status==='Sufficient'?'#16a34a':r.status==='Insufficient'?'#dc2626':'#94a3b8'; }
+function drawDiamond(x,y,s){ ctx.beginPath(); ctx.moveTo(x,y-s); ctx.lineTo(x+s,y); ctx.lineTo(x,y+s); ctx.lineTo(x-s,y); ctx.closePath(); }
+function areaShade(c2,S,ox,oy){
+  if(!settings.heat || OM.status!=='ready') return;
+  const res=new Map();
+  if(state.view==='compare'){ FCLUSTERS.forEach(c=>{ const k=c.barangay; if(!res.has(k)) res.set(k,{g:0,b:0,n:0}); const o=res.get(k); o.n++; if(c.result==='improved')o.g++; if(c.result==='worsened')o.b++; }); }
+  else { FILTERED.forEach(r=>{ const k=r.barangay; if(!res.has(k)) res.set(k,{g:0,b:0,n:0}); const o=res.get(k); o.n++; if(r.status==='Sufficient')o.g++; if(r.status==='Insufficient')o.b++; }); }
+  OM.barangays.forEach(f=>{ const o=res.get(f.name); if(!o||!o.n) return; const t=(o.g-o.b)/o.n; // -1..1
+    c2.fillStyle=t>=0?'rgba(22,163,74,'+(0.12+0.28*t)+')':'rgba(220,38,38,'+(0.12+0.28*-t)+')';
+    c2.beginPath(); f.parts.forEach(p=>trace(c2,p,S,ox,oy,true)); c2.fill('evenodd'); });
+}
+function renderMap(){
+  const rect=canvas.getBoundingClientRect(), w=Math.max(1,Math.round(rect.width)), h=Math.max(1,Math.round(rect.height)), dpr=Math.min(window.devicePixelRatio||1,2.5);
+  if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){ canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr); }
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+  const V=getView(w,h), online=settings.base==='online'&&navigator.onLine;
+  if(OM.status==='ready'){
+    drawBase(ctx,w,h,V,{shade:areaShade});
+    if(online) drawTiles(w,h,V);
+    if(online) areaShade(ctx,V.S,V.ox,V.oy);
+    const hl=$('fBarangay').value?OM.barangays.filter(b=>b.name===$('fBarangay').value):null;
+    drawBoundaries(ctx,V,{brgy:settings.brgy,highlight:hl});
+  }else{
+    ctx.fillStyle='#eef2f7'; ctx.fillRect(0,0,w,h);
+    if(online) drawTiles(w,h,V);
+  }
+  // ---- wells ----
+  const markers=[]; const S=V.S, z=V.z;
+  const sz=z>=16?8:z>=14?6.5:5;
+  if(state.view==='all'){
+    FILTERED.forEach(r=>{ if(!r.hasCoord) return; const x=r.wx*S-V.ox, y=r.wy*S-V.oy; if(x<-20||y<-20||x>w+20||y>h+20) return; markers.push({x,y,r}); });
+    markers.forEach(m=>{ const sel=state.selected&&state.selected.type==='record'&&state.selected.id===m.r.id;
+      ctx.fillStyle=wellColor(m.r); ctx.strokeStyle='#fff'; ctx.lineWidth=2;
+      if(m.r.round==='After') drawDiamond(m.x,m.y,sz+1.5); else { ctx.beginPath(); ctx.arc(m.x,m.y,sz,0,Math.PI*2); }
+      ctx.fill(); ctx.stroke();
+      if(!(m.r.checkedBy||m.r.rating)){ ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(m.x,m.y,sz+3.5,0,Math.PI*2); ctx.stroke(); }
+      if(sel){ ctx.strokeStyle='#0f172a'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(m.x,m.y,sz+7,0,Math.PI*2); ctx.stroke(); } });
+  }else{
+    const mpp=156543.03392*Math.cos(10.72*Math.PI/180)/2**z;
+    FCLUSTERS.forEach(c=>{ const bp=proj(c.base.lat,c.base.lon), x=bp.x*S-V.ox, y=bp.y*S-V.oy; if(x<-60||y<-60||x>w+60||y>h+60) return;
+      const col=RESULT[c.result][2], sel=state.selected&&state.selected.type==='cluster'&&state.selected.key===c.key;
+      const rpx=settings.radius/mpp;
+      if(rpx>10){ ctx.setLineDash([4,4]); ctx.strokeStyle=col; ctx.globalAlpha=.6; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(x,y,rpx,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=.08; ctx.fillStyle=col; ctx.fill(); ctx.globalAlpha=1; ctx.setLineDash([]); }
+      if(c.after && c.before && z>=16){ const ap=proj(c.after.lat,c.after.lon), ax=ap.x*S-V.ox, ay=ap.y*S-V.oy; ctx.strokeStyle='#7c3aed'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(ax,ay); ctx.stroke(); ctx.fillStyle='#7c3aed'; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; drawDiamond(ax,ay,5); ctx.fill(); ctx.stroke(); }
+      ctx.fillStyle=col; ctx.strokeStyle='#fff'; ctx.lineWidth=2.2; ctx.beginPath(); ctx.arc(x,y,sz+1,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      if(c.before&&c.after){ ctx.fillStyle='#fff'; ctx.font='900 '+(sz+3)+'px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(c.result==='improved'?'↑':c.result==='worsened'?'↓':'=',x,y+.5); }
+      if(sel){ ctx.strokeStyle='#0f172a'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(x,y,sz+7,0,Math.PI*2); ctx.stroke(); }
+      markers.push({x,y,c}); });
+  }
+  mv.markers=markers;
+  if(OM.status==='ready' && !online) drawLabels(ctx,w,h,V,{placed:markers.map(m=>[m.x-sz-2,m.y-sz-2,m.x+sz+2,m.y+sz+2])});
+  else if(OM.status==='ready' && settings.brgy && z>=14) drawLabels(ctx,w,h,Object.assign({},V,{roads:null,z:Math.min(z,15)}),{placed:markers.map(m=>[m.x-sz-2,m.y-sz-2,m.x+sz+2,m.y+sz+2])});
+  const c=unproj(mv.cx,mv.cy), b=barangayAt(c.lat,c.lon);
+  $('mapStatus').textContent=(OM.status==='loading'?'Loading offline Iloilo map… ':OM.status==='error'?'Offline map file (iloilo-map.js) not found — put dashboard.html in the same folder. ':'')
+    +'Zoom '+z+' · '+c.lat.toFixed(5)+', '+c.lon.toFixed(5)+(b?' · '+b.name+', '+b.district:'')+' · scroll to zoom, drag to move, click a well';
+}
+function flyTo(lat,lon,z){ const p=proj(lat,lon); mv.cx=p.x; mv.cy=p.y; mv.z=Math.max(mv.z,z||17); requestRender(); }
+function fitToData(){
+  const pts=(state.view==='all'?FILTERED.filter(r=>r.hasCoord).map(r=>({x:r.wx,y:r.wy})):FCLUSTERS.map(c=>proj(c.base.lat,c.base.lon)));
+  const rect=canvas.getBoundingClientRect(); const w=rect.width||800, h=rect.height||500;
+  if(!pts.length){ const p=proj(10.7202,122.5621); mv.cx=p.x; mv.cy=p.y; mv.z=13; requestRender(); return; }
+  let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity; pts.forEach(p=>{a=Math.min(a,p.x);b=Math.min(b,p.y);c=Math.max(c,p.x);d=Math.max(d,p.y);});
+  mv.cx=(a+c)/2; mv.cy=(b+d)/2;
+  let z=18; while(z>11 && ((c-a)*2**z>w-80 || (d-b)*2**z>h-80)) z--;
+  mv.z=z; requestRender();
+}
+function zoomAt(nz,sx,sy){
+  nz=clamp(nz,11,19); if(nz===mv.z) return;
+  const rect=canvas.getBoundingClientRect(); const w=rect.width,h=rect.height; sx=sx??w/2; sy=sy??h/2;
+  const s0=2**mv.z, wx=(mv.cx*s0-w/2+sx)/s0, wy=(mv.cy*s0-h/2+sy)/s0, s1=2**nz;
+  mv.cx=(wx*s1-sx+w/2)/s1; mv.cy=(wy*s1-sy+h/2)/s1; mv.z=nz; requestRender();
+}
+function hit(sx,sy){ let best=null,bd=14; mv.markers.forEach(m=>{ const d=Math.hypot(m.x-sx,m.y-sy); if(d<bd){bd=d;best=m;} }); return best; }
+canvas.addEventListener('pointerdown',e=>{ canvas.setPointerCapture(e.pointerId); mv.drag={x:e.clientX,y:e.clientY,cx:mv.cx,cy:mv.cy,moved:false}; });
+canvas.addEventListener('pointermove',e=>{
+  const rect=canvas.getBoundingClientRect(), sx=e.clientX-rect.left, sy=e.clientY-rect.top;
+  if(mv.drag){ const dx=e.clientX-mv.drag.x, dy=e.clientY-mv.drag.y; if(Math.hypot(dx,dy)>4){ mv.drag.moved=true; canvas.classList.add('dragging'); }
+    if(mv.drag.moved){ const s=2**mv.z; mv.cx=mv.drag.cx-dx/s; mv.cy=mv.drag.cy-dy/s; requestRender(); $('tooltip').style.display='none'; return; } }
+  const m=hit(sx,sy), tt=$('tooltip');
+  if(m){ canvas.style.cursor='pointer'; const r=m.r||m.c.main;
+    tt.innerHTML=m.r?'<b>'+esc(r.interviewee||'—')+'</b><br>'+esc(r.barangay)+', '+esc(r.district)+'<br>'+esc(r.status)+' · '+(r.round||'—')+' · '+fmtDate(r.date)+(r.rating?'<br>'+'★'.repeat(r.rating):'')
+      :'<b>'+esc(r.interviewee||'Well')+'</b><br>'+esc(m.c.barangay)+'<br>'+RESULT[m.c.result][0]+(m.c.dSupply!==null?'<br>Supply Δ '+fmt(m.c.dSupply)+' L':'');
+    tt.style.display='block'; tt.style.left=Math.min(sx+14,rect.width-270)+'px'; tt.style.top=(sy+14)+'px'; }
+  else { canvas.style.cursor=''; tt.style.display='none'; }
+});
+canvas.addEventListener('pointerup',e=>{
+  const d=mv.drag; mv.drag=null; canvas.classList.remove('dragging'); if(!d||d.moved) return;
+  const rect=canvas.getBoundingClientRect(), m=hit(e.clientX-rect.left,e.clientY-rect.top);
+  if(m) select(m.r?{type:'record',id:m.r.id}:{type:'cluster',key:m.c.key},false);
+});
+canvas.addEventListener('dblclick',e=>{ const rect=canvas.getBoundingClientRect(); zoomAt(mv.z+1,e.clientX-rect.left,e.clientY-rect.top); });
+canvas.addEventListener('wheel',e=>{ e.preventDefault(); const now=Date.now(); if(now-(mv.lastWheel||0)<160) return; mv.lastWheel=now; const rect=canvas.getBoundingClientRect(); zoomAt(mv.z+(e.deltaY<0?1:-1),e.clientX-rect.left,e.clientY-rect.top); },{passive:false});
+window.addEventListener('resize',requestRender);
+
+/* =====================================================================
+   SAMPLE DATA (for trying the dashboard)
+   ===================================================================== */
+function makeSample(){
+  if(OM.status!=='ready'){ toast('Map still loading — try again in a moment'); return; }
+  let seed=7; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const brgys=OM.barangays.slice().sort(()=>rnd()-.5).slice(0,30), rows=[]; let n=0;
+  const names=['Santos','Reyes','Cruz','Bautista','Ocampo','Garcia','Mendoza','Torres','Villanueva','Ramos','Aquino','Castillo','Gonzales','Flores','Navarro'];
+  brgys.forEach(b=>{ for(let k=0;k<3;k++){
+    const ll=unproj(b.lx+(rnd()-.5)*0.00004,b.ly+(rnd()-.5)*0.00004); const pop=2+Math.floor(rnd()*9), norm=4+Math.floor(rnd()*5);
+    const curB=Math.max(0,norm-Math.floor(rnd()*5)), surveyor='Surveyor '+(1+Math.floor(rnd()*12)), who=['Juan','Maria','Jose','Ana','Pedro','Rosa'][Math.floor(rnd()*6)]+' '+names[Math.floor(rnd()*names.length)];
+    const rec=(round,cur,day,dLat,dLon,sv)=>{ const need=pop*30, sup=cur*200, av=sup-need; n++;
+      return {'Record ID':'SAMPLE-'+n,'Surveyor':sv,'Device ID':'SAMPLE','District':b.district,'Barangay':b.name,'Zone':'Zone '+(1+Math.floor(rnd()*6)),'Latitude X':(ll.lat+dLat).toFixed(6),'Latitude Y':(ll.lon+dLon).toFixed(6),
+        'Interviewee':who,'Interview Date/Time':day,'Survey Round':round,'Population':pop,'Well Depth (Tabay)':norm+2,'Normal Level':norm,'Current Level':cur,'Daily Need (L)':need,'Current Supply (L)':sup,'Available Supply (L)':av,
+        'Recharge (Tabay)':Math.max(0,norm-cur),'Recharge (L)':Math.max(0,norm-cur)*200,'Status':av>=0?'Sufficient':'Insufficient','Affected':av>=0?0:pop,'Remarks':'',
+        'Checked By':rnd()<.4?'Engr. Reyes':'','Rating (1-5)':rnd()<.4?String(3+Math.floor(rnd()*3)):''}; };
+    rows.push(rec('Baseline',curB,'2026-10-'+String(1+Math.floor(rnd()*14)).padStart(2,'0')+'T09:00',0,0,surveyor));
+    if(rnd()<.72){ const change=Math.round((rnd()-.4)*4); rows.push(rec('After',clamp(curB+change,0,norm),'2026-11-'+String(1+Math.floor(rnd()*4)).padStart(2,'0')+'T10:30',(rnd()-.5)*0.00008,(rnd()-.5)*0.00008,'Surveyor '+(1+Math.floor(rnd()*12)))); }
+  }});
+  setData(rows,'sample'); toast('Sample data loaded — 30 barangays, baseline in October, after-surveys in November');
+}
+
+/* =====================================================================
+   UI WIRING
+   ===================================================================== */
+function setView(v){ state.view=v; document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  if(v==='compare' && state.tab==='records') setTab('compare'); else if(v==='all' && state.tab!=='records') setTab('records'); rebuild(); }
+function setTab(t){ state.tab=t; document.querySelectorAll('#tabs button[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===t)); renderTable(); }
+document.querySelectorAll('#viewSeg button').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+document.querySelectorAll('#tabs button[data-tab]').forEach(b=>b.onclick=()=>{ setTab(b.dataset.tab); if(b.dataset.tab!=='records'&&state.view!=='compare'){ state.view='compare'; document.querySelectorAll('#viewSeg button').forEach(x=>x.classList.toggle('active',x.dataset.view==='compare')); rebuild(); } if(b.dataset.tab==='records'&&state.view!=='all'){ state.view='all'; document.querySelectorAll('#viewSeg button').forEach(x=>x.classList.toggle('active',x.dataset.view==='all')); rebuild(); } });
+['fSearch','fSurveyor','fStatus','fReview','fFrom','fTo','fBarangay'].forEach(id=>$(id).addEventListener('input',rebuild));
+$('fDistrict').addEventListener('input',()=>{ updateBarangayOptions(); rebuild(); });
+$('fBarangay').addEventListener('change',()=>{ if($('fBarangay').value) fitToData(); });
+$('clearFilters').onclick=()=>{ ['fSearch','fDistrict','fBarangay','fSurveyor','fStatus','fReview','fFrom','fTo'].forEach(id=>$(id).value=''); updateBarangayOptions(); rebuild(); fitToData(); };
+$('radius').value=settings.radius; $('radiusVal').textContent=settings.radius+' m';
+$('radius').addEventListener('input',()=>{ settings.radius=+$('radius').value; $('radiusVal').textContent=settings.radius+' m'; saveSettingsLocal(); rebuild(); });
+$('phaseRule').value=settings.rule; $('cutoff').value=settings.cutoff; $('cutoffField').style.display=settings.rule==='date'?'block':'none';
+$('phaseRule').addEventListener('input',()=>{ settings.rule=$('phaseRule').value; $('cutoffField').style.display=settings.rule==='date'?'block':'none'; saveSettingsLocal(); rebuild(); });
+$('cutoff').addEventListener('input',()=>{ settings.cutoff=$('cutoff').value; saveSettingsLocal(); rebuild(); });
+$('zIn').onclick=()=>zoomAt(mv.z+1); $('zOut').onclick=()=>zoomAt(mv.z-1); $('fitBtn').onclick=fitToData;
+const syncToggles=()=>{ $('baseBtn').classList.toggle('on',settings.base==='online'); $('brgyBtn').classList.toggle('on',settings.brgy); $('heatBtn').classList.toggle('on',settings.heat); };
+$('baseBtn').onclick=()=>{ settings.base=settings.base==='online'?'offline':'online'; if(settings.base==='online'&&!navigator.onLine) toast('No internet — staying on the offline Iloilo map'); saveSettingsLocal(); syncToggles(); renderMapTop(); requestRender(); };
+$('brgyBtn').onclick=()=>{ settings.brgy=!settings.brgy; saveSettingsLocal(); syncToggles(); requestRender(); };
+$('heatBtn').onclick=()=>{ settings.heat=!settings.heat; saveSettingsLocal(); syncToggles(); requestRender(); toast(settings.heat?(state.view==='compare'?'Barangays shaded: green = more improved, red = more worsened':'Barangays shaded: green = mostly sufficient, red = mostly insufficient'):'Shading off'); };
+syncToggles();
+$('refreshBtn').onclick=()=>{ if(DATA_SOURCE==='sample'||DATA_SOURCE==='csv'||!settings.url){ if(settings.url&&settings.key) loadFromSheet(false); else openConnect(); } else loadFromSheet(false); };
+$('autoRefresh').checked=!!settings.auto;
+let autoTimer=null; const setAuto=()=>{ clearInterval(autoTimer); if(settings.auto) autoTimer=setInterval(()=>{ if(DATA_SOURCE==='sheet'&&navigator.onLine) loadFromSheet(true); },60000); };
+$('autoRefresh').onchange=()=>{ settings.auto=$('autoRefresh').checked; saveSettingsLocal(); setAuto(); }; setAuto();
+$('importBtn').onclick=()=>$('csvFile').click();
+$('csvFile').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; const rows=parseCSV(await f.text()); setData(rows,'csv'); toast('Imported '+rows.length+' rows from '+f.name); e.target.value=''; closeModals(); };
+$('printBtn').onclick=()=>window.print();
+$('exportBtn').onclick=()=>{
+  const T=TABLES[state.tab], rows=T.rows(); const strip=s=>String(s).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+  const csv=[T.cols.map(c=>c[1])].concat(rows.map(r=>T.cols.map(c=>strip(c[2](r))))).map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'})); a.download={records:'survey-records',compare:'baseline-vs-after-by-well',area:'baseline-vs-after-by-barangay'}[state.tab]+'.csv'; a.click();
+};
+function closeModals(){ document.querySelectorAll('.modal-bg').forEach(m=>m.classList.remove('open')); }
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModals);
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) closeModals(); }));
+function openConnect(){ closeModals(); $('cUrl').value=settings.url; $('cKey').value=settings.key; $('cChecker').value=settings.checker; $('cNote').className='note'; $('cNote').textContent='The key keeps interviewee names private: phones can only send records, only this dashboard can read them.'; $('connectModal').classList.add('open'); }
+$('connectBtn').onclick=openConnect;
+async function testConn(){
+  const url=$('cUrl').value.trim(), key=$('cKey').value.trim(), n=$('cNote');
+  if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)){ n.className='note err'; n.textContent='That does not look like an Apps Script Web App URL (https://script.google.com/macros/s/…/exec).'; return false; }
+  n.className='note'; n.textContent='Testing…';
+  try{ const res=await fetch(url+(url.includes('?')?'&':'?')+'action=records&key='+encodeURIComponent(key)+'&t='+Date.now(),{redirect:'follow'}); const d=await res.json();
+    if(d.ok){ n.className='note ok'; n.textContent='Connected ✅ — '+d.records.length+' records in "'+d.sheet+'".'; return true; }
+    n.className='note err'; n.textContent=d.error==='Wrong dashboard key.'?'The URL works but the key is wrong. Use the DASHBOARD_KEY written in the Apps Script.':'Sheet answered: '+(d.error||'unexpected reply')+'. Make sure the NEW google-apps-script.gs is deployed.'; return false;
+  }catch(e){ n.className='note err'; n.textContent='No readable reply. Check: internet, the URL ends in /exec, access is "Anyone", and you deployed a New version after pasting the script.'; return false; }
+}
+$('cTest').onclick=testConn;
+$('cSave').onclick=async()=>{ settings.url=$('cUrl').value.trim(); settings.key=$('cKey').value.trim(); settings.checker=$('cChecker').value.trim(); saveSettingsLocal(); if(await testConn()){ closeModals(); loadFromSheet(false); } };
+$('wConnect').onclick=openConnect; $('wImport').onclick=()=>$('csvFile').click(); $('wSample').onclick=()=>{ closeModals(); makeSample(); };
+window.addEventListener('online',()=>{ renderMapTop(); requestRender(); }); window.addEventListener('offline',()=>{ renderMapTop(); requestRender(); });
+
+function afterMapLoad(){ rebuild(); if(state.selected) reselect(state.selected); }
+loadMapData(); renderKpis(); renderLegend(); renderTable(); renderMapTop(); requestRender();
+if(settings.url && settings.key) loadFromSheet(false); else $('welcomeModal').classList.add('open');
+</script>
+</body>
+</html>
